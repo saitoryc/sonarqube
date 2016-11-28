@@ -46,7 +46,7 @@ public class AuthenticationEventImpl implements AuthenticationEvent {
   public void failure(HttpServletRequest request, AuthenticationException e) {
     Source source = e.getSource();
     LOGGER.info("login failure [cause|{}][method|{}][provider|{}|{}][IP|{}|{}][login|{}]",
-      e.getMessage(),
+      emptyIfNull(e.getMessage()),
       source.getMethod(), source.getProvider(), source.getProviderName(),
       request.getRemoteAddr(), getAllIps(request),
       emptyIfNull(e.getLogin()));

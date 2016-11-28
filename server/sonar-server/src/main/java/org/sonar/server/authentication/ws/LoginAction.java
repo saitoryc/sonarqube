@@ -41,6 +41,7 @@ import org.sonar.server.user.ServerUserSession;
 import org.sonar.server.user.ThreadLocalUserSession;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
@@ -90,7 +91,7 @@ public class LoginAction extends ServletFilter {
       // TODO add chain.doFilter when Rack filter will not be executed after this filter (or use a Servlet)
     } catch (AuthenticationException e) {
       authenticationEvent.failure(request, e);
-      response.setStatus(e.httpCode());
+      response.setStatus(HTTP_UNAUTHORIZED);
     } catch (UnauthorizedException e) {
       response.setStatus(e.httpCode());
     }

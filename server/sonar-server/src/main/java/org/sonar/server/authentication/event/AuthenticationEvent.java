@@ -19,6 +19,7 @@
  */
 package org.sonar.server.authentication.event;
 
+import java.io.Serializable;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
@@ -35,14 +36,64 @@ public interface AuthenticationEvent {
   void failure(HttpServletRequest request, AuthenticationException e);
 
   enum Method {
-    BASIC, BASIC_TOKEN, FORM, FORM_TOKEN, SSO, OAUTH2, JWT, CSRF, EXTERNAL
+    /**
+     * HTTP basic authentication with a login and password.
+     */
+    BASIC,
+    /**
+     * HTTP basic authentication with a security token.
+     */
+    BASIC_TOKEN,
+    /**
+     * SQ login form authentication with a login and password.
+     */
+    FORM,
+    /**
+     * SSO authentication (ie. with HTTP headers)
+     */
+    SSO,
+    /**
+     * OAUTH2 authentication.
+     */
+    OAUTH2,
+    /**
+     * JWT authentication (ie. with a session token).
+     */
+    JWT,
+    /**
+     * CSRF verification (can be used only in case of failure).
+     */
+    CSRF,
+    /**
+     * External authentication (ie. fully implemented out of SQ's core code, see {@link BaseIdentityProvider}).
+     */
+    EXTERNAL
   }
 
   enum Provider {
-    LOCAL, SSO, REALM, EXTERNAL, JWT
+    /**
+     * User authentication made against data in SQ's User table.
+     */
+    LOCAL,
+    /**
+     * User authentication made by SSO provider.
+     */
+    SSO,
+    /**
+     * User authentication made by Realm based provider (eg. LDAP).
+     */
+    REALM,
+    /**
+     * User authentication made by JWT token information.
+     */
+    JWT,
+    /**
+     * User authentication made by external provider (see {@link BaseIdentityProvider}).
+     */
+    EXTERNAL
   }
 
-  class Source {
+  final class Source implements Serializable {
     private static final String LOCAL_PROVIDER_NAME = "local";
     private static final Source SSO_INSTANCE = new Source(Method.SSO, Provider.SSO, "sso");
     private static final Source JWT_INSTANCE = new Source(Method.JWT, Provider.JWT, "jwt");
@@ -90,7 +141,9 @@ public interface AuthenticationEvent {
     }
 
     public static Source external(BaseIdentityProvider identityProvider) {
-      return new Source(Method.EXTERNAL, Provider.EXTERNAL, identityProvider.getName());
+      return new Source(
+        Method.EXTERNAL, Provider.EXTERNAL,
+        requireNonNull(identityProvider, "identityProvider can't be null").getName());
     }
 
     Method getMethod() {

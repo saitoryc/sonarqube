@@ -33,7 +33,6 @@ import org.sonar.db.DbTester;
 import org.sonar.db.user.UserDto;
 import org.sonar.db.user.UserTesting;
 import org.sonar.server.authentication.event.AuthenticationEvent;
-import org.sonar.server.authentication.event.AuthenticationException;
 import org.sonar.server.usertoken.UserTokenAuthenticator;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -44,9 +43,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.sonar.server.authentication.event.AuthenticationEvent.Method;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method.BASIC;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method.BASIC_TOKEN;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
+import static org.sonar.server.authentication.event.AuthenticationExceptionMatcher.authenticationException;
 
 public class BasicAuthenticatorTest {
 
@@ -120,7 +121,7 @@ public class BasicAuthenticatorTest {
   public void fail_to_authenticate_when_no_login() throws Exception {
     when(request.getHeader("Authorization")).thenReturn("Basic " + toBase64(":" + PASSWORD));
 
-    expectedException.expect(AuthenticationException.class);
+    expectedException.expect(authenticationException().from(Source.local(BASIC)).withoutLogin());
     try {
       underTest.authenticate(request);
     } finally {
@@ -147,7 +148,7 @@ public class BasicAuthenticatorTest {
     when(userTokenAuthenticator.authenticate("token")).thenReturn(Optional.empty());
     when(request.getHeader("Authorization")).thenReturn("Basic " + toBase64("token:"));
 
-    expectedException.expect(AuthenticationException.class);
+    expectedException.expect(authenticationException().from(Source.local(BASIC_TOKEN)).withoutLogin());
     try {
       underTest.authenticate(request);
     } finally {
@@ -161,7 +162,7 @@ public class BasicAuthenticatorTest {
     when(userTokenAuthenticator.authenticate("token")).thenReturn(Optional.of("Unknown user"));
     when(request.getHeader("Authorization")).thenReturn("Basic " + toBase64("token:"));
 
-    expectedException.expect(AuthenticationException.class);
+    expectedException.expect(authenticationException().from(Source.local(Method.BASIC_TOKEN)).withoutLogin());
     try {
       underTest.authenticate(request);
     } finally {

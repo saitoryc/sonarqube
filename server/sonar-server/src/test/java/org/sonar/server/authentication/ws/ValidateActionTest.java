@@ -55,7 +55,7 @@ public class ValidateActionTest {
 
   Settings settings = new MapSettings();
 
-  ValidateAction underTest  = new ValidateAction(settings, basicAuthenticator, jwtHttpHandler);
+  ValidateAction underTest = new ValidateAction(settings, basicAuthenticator, jwtHttpHandler);
 
   @Before
   public void setUp() throws Exception {

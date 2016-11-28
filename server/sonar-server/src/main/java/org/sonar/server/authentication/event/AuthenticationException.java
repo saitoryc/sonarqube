@@ -21,21 +21,26 @@ package org.sonar.server.authentication.event;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.server.exceptions.ServerException;
 
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.util.Objects.requireNonNull;
 
 /**
- * User needs to be authenticated. HTTP request is generally redirected to login form.
+ * Exception thrown in case of authentication failure.
+ * <p>
+ * This exception contains the source of authentication and, if present, the login on which the login attempt occurred.
+ * </p>
+ * <p>
+ * Given that {@link #source} and {@link #login} will be logged to file, be very careful <strong>not to set the login
+ * when the login is a security token</strong>.
+ * </p>
  */
-public class AuthenticationException extends ServerException {
+public class AuthenticationException extends RuntimeException {
   private final AuthenticationEvent.Source source;
   @CheckForNull
   private final String login;
 
   private AuthenticationException(Builder builder) {
-    super(HTTP_UNAUTHORIZED, builder.message);
+    super(builder.message);
     this.source = requireNonNull(builder.source, "source can't be null");
     this.login = builder.login;
   }

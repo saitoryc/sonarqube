@@ -35,7 +35,6 @@ import org.sonar.db.DbTester;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
-import org.sonar.server.authentication.event.AuthenticationException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
 import org.sonar.server.organization.TestDefaultOrganizationProvider;
 import org.sonar.server.user.NewUserNotifier;
@@ -49,6 +48,7 @@ import static org.sonar.db.organization.OrganizationTesting.newOrganizationDto;
 import static org.sonar.db.user.UserTesting.newUserDto;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
+import static org.sonar.server.authentication.event.AuthenticationExceptionMatcher.authenticationException;
 
 public class UserIdentityAuthenticatorTest {
 
@@ -359,10 +359,11 @@ public class UserIdentityAuthenticatorTest {
       .setName("Github")
       .setEnabled(true)
       .setAllowsUsersToSignUp(false);
+    Source source = Source.realm(Method.FORM, identityProvider.getName());
 
-    thrown.expect(AuthenticationException.class);
+    thrown.expect(authenticationException().from(source).withLogin(USER_IDENTITY.getLogin()));
     thrown.expectMessage("'github' users are not allowed to sign up");
-    underTest.authenticate(USER_IDENTITY, identityProvider, Source.realm(Method.FORM, identityProvider.getName()));
+    underTest.authenticate(USER_IDENTITY, identityProvider, source);
   }
 
   @Test
@@ -371,11 +372,12 @@ public class UserIdentityAuthenticatorTest {
       .setLogin("Existing user with same email")
       .setActive(true)
       .setEmail("john@email.com"));
+    Source source = Source.realm(Method.FORM, IDENTITY_PROVIDER.getName());
 
-    thrown.expect(AuthenticationException.class);
+    thrown.expect(authenticationException().from(source).withLogin(USER_IDENTITY.getLogin()));
     thrown.expectMessage("You can't sign up because email 'john@email.com' is already used by an existing user. " +
       "This means that you probably already registered with another account.");
-    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, Source.realm(Method.FORM_TOKEN, IDENTITY_PROVIDER.getName()));
+    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, source);
   }
 
   private void authenticate(String login, String... groups) {
