@@ -38,17 +38,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class OAuthCsrfVerifierTest {
+  private static final String PROVIDER_NAME = "provider name";
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  ArgumentCaptor<Cookie> cookieArgumentCaptor = ArgumentCaptor.forClass(Cookie.class);
+  private ArgumentCaptor<Cookie> cookieArgumentCaptor = ArgumentCaptor.forClass(Cookie.class);
 
-  Server server = mock(Server.class);
-  HttpServletResponse response = mock(HttpServletResponse.class);
-  HttpServletRequest request = mock(HttpServletRequest.class);
+  private Server server = mock(Server.class);
+  private HttpServletResponse response = mock(HttpServletResponse.class);
+  private HttpServletRequest request = mock(HttpServletRequest.class);
 
-  OAuthCsrfVerifier underTest = new OAuthCsrfVerifier();
+  private OAuthCsrfVerifier underTest = new OAuthCsrfVerifier();
 
   @Before
   public void setUp() throws Exception {
@@ -71,7 +72,7 @@ public class OAuthCsrfVerifierTest {
     when(request.getCookies()).thenReturn(new Cookie[] {new Cookie("OAUTHSTATE", sha256Hex(state))});
     when(request.getParameter("state")).thenReturn(state);
 
-    underTest.verifyState(request, response);
+    underTest.verifyState(request, response, PROVIDER_NAME);
 
     verify(response).addCookie(cookieArgumentCaptor.capture());
     Cookie updatedCookie = cookieArgumentCaptor.getValue();
@@ -87,7 +88,7 @@ public class OAuthCsrfVerifierTest {
     when(request.getParameter("state")).thenReturn("other value");
 
     thrown.expect(UnauthorizedException.class);
-    underTest.verifyState(request, response);
+    underTest.verifyState(request, response, PROVIDER_NAME);
   }
 
   @Test
@@ -96,7 +97,7 @@ public class OAuthCsrfVerifierTest {
     when(request.getParameter("state")).thenReturn("state");
 
     thrown.expect(UnauthorizedException.class);
-    underTest.verifyState(request, response);
+    underTest.verifyState(request, response, PROVIDER_NAME);
   }
 
   @Test
@@ -105,7 +106,7 @@ public class OAuthCsrfVerifierTest {
     when(request.getParameter("state")).thenReturn("");
 
     thrown.expect(UnauthorizedException.class);
-    underTest.verifyState(request, response);
+    underTest.verifyState(request, response, PROVIDER_NAME);
   }
 
   private void verifyCookie(Cookie cookie) {

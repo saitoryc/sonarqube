@@ -22,8 +22,11 @@ package org.sonar.server.authentication.event;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.sonar.api.server.authentication.OAuth2IdentityProvider;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Provider;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
@@ -50,20 +53,19 @@ public class AuthenticationEventSourceTest {
   }
 
   @Test
-  public void oauth2_fails_with_NPE_if_providerName_is_null() {
+  public void oauth2_fails_with_NPE_if_provider_is_null() {
     expectedException.expect(NullPointerException.class);
-    expectedException.expectMessage("provider name can't be null");
+    expectedException.expectMessage("identityProvider can't be null");
 
     Source.oauth2(null);
   }
 
   @Test
-  public void oauth2_creates_source_instance_with_specified_provider_name_and_hardcoded_provider_and_method() {
-    Source underTest = Source.oauth2("some name");
+  public void oauth2_fails_with_NPE_if_providerName_is_null() {
+    expectedException.expect(NullPointerException.class);
+    expectedException.expectMessage("provider name can't be null");
 
-    assertThat(underTest.getMethod()).isEqualTo(Method.OAUTH2);
-    assertThat(underTest.getProvider()).isEqualTo(Provider.EXTERNAL);
-    assertThat(underTest.getProviderName()).isEqualTo("some name");
+    Source.oauth2(newOauth2IdentityProvider(null));
   }
 
   @Test
@@ -71,7 +73,16 @@ public class AuthenticationEventSourceTest {
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("provider name can't be empty");
 
-    Source.oauth2("");
+    Source.oauth2(newOauth2IdentityProvider(""));
+  }
+
+  @Test
+  public void oauth2_creates_source_instance_with_specified_provider_name_and_hardcoded_provider_and_method() {
+    Source underTest = Source.oauth2(newOauth2IdentityProvider("some name"));
+
+    assertThat(underTest.getMethod()).isEqualTo(Method.OAUTH2);
+    assertThat(underTest.getProvider()).isEqualTo(Provider.EXTERNAL);
+    assertThat(underTest.getProviderName()).isEqualTo("some name");
   }
 
   @Test
@@ -116,5 +127,11 @@ public class AuthenticationEventSourceTest {
     assertThat(underTest.getProviderName()).isEqualTo("sso");
 
     assertThat(underTest).isSameAs(Source.sso());
+  }
+
+  private static OAuth2IdentityProvider newOauth2IdentityProvider(String name) {
+    OAuth2IdentityProvider mock = mock(OAuth2IdentityProvider.class);
+    when(mock.getName()).thenReturn(name);
+    return mock;
   }
 }

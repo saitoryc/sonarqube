@@ -24,6 +24,8 @@ import java.security.SecureRandom;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.sonar.server.authentication.event.AuthenticationEvent;
+import org.sonar.server.authentication.event.AuthenticationException;
 import org.sonar.server.exceptions.UnauthorizedException;
 
 import static java.lang.String.format;
@@ -44,8 +46,12 @@ public class OAuthCsrfVerifier {
     return state;
   }
 
-  public void verifyState(HttpServletRequest request, HttpServletResponse response) {
-    Cookie cookie = findCookie(CSRF_STATE_COOKIE, request).orElseThrow(() -> new UnauthorizedException(format("Cookie '%s' is missing", CSRF_STATE_COOKIE)));
+  public void verifyState(HttpServletRequest request, HttpServletResponse response, String providerName) {
+    Cookie cookie = findCookie(CSRF_STATE_COOKIE, request)
+      .orElseThrow(() -> AuthenticationException.newBuilder()
+        .setSource(AuthenticationEvent.Source.oauth2Csrf(providerName))
+        .setMessage(format("Cookie '%s' is missing", CSRF_STATE_COOKIE))
+        .build());
     String hashInCookie = cookie.getValue();
 
     // remove cookie

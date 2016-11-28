@@ -31,7 +31,7 @@ import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
 import org.sonar.db.user.UserDto;
 import org.sonar.server.authentication.event.AuthenticationEvent;
-import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.authentication.event.AuthenticationException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.rules.ExpectedException.none;
@@ -40,8 +40,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonar.db.user.UserTesting.newUserDto;
-import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
 import static org.sonar.server.authentication.event.AuthenticationEvent.Method.BASIC;
+import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
 
 public class CredentialsAuthenticatorTest {
 
@@ -86,7 +86,7 @@ public class CredentialsAuthenticatorTest {
       .setSalt("Wrong salt")
       .setLocal(true));
 
-    expectedException.expect(UnauthorizedException.class);
+    expectedException.expect(AuthenticationException.class);
     try {
       executeAuthenticate();
     } finally {
@@ -114,7 +114,7 @@ public class CredentialsAuthenticatorTest {
       .setLogin(LOGIN)
       .setLocal(false));
 
-    expectedException.expect(UnauthorizedException.class);
+    expectedException.expect(AuthenticationException.class);
     try {
       executeAuthenticate();
     } finally {
@@ -130,7 +130,7 @@ public class CredentialsAuthenticatorTest {
       .setSalt(SALT)
       .setLocal(true));
 
-    expectedException.expect(UnauthorizedException.class);
+    expectedException.expect(AuthenticationException.class);
     try {
       executeAuthenticate();
     } finally {
@@ -146,7 +146,7 @@ public class CredentialsAuthenticatorTest {
       .setSalt(null)
       .setLocal(true));
 
-    expectedException.expect(UnauthorizedException.class);
+    expectedException.expect(AuthenticationException.class);
     try {
       executeAuthenticate();
     } finally {

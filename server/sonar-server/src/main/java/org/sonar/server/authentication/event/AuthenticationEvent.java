@@ -22,6 +22,8 @@ package org.sonar.server.authentication.event;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
+import org.sonar.api.server.authentication.BaseIdentityProvider;
+import org.sonar.api.server.authentication.OAuth2IdentityProvider;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -30,17 +32,21 @@ public interface AuthenticationEvent {
 
   void login(HttpServletRequest request, String login, Source source);
 
+  void failure(HttpServletRequest request, AuthenticationException e);
+
   enum Method {
-    BASIC, BASIC_TOKEN, FORM, FORM_TOKEN, SSO, OAUTH2, EXTERNAL
+    BASIC, BASIC_TOKEN, FORM, FORM_TOKEN, SSO, OAUTH2, JWT, CSRF, EXTERNAL
   }
 
   enum Provider {
-    LOCAL, SSO, REALM, EXTERNAL
+    LOCAL, SSO, REALM, EXTERNAL, JWT
   }
 
   class Source {
     private static final String LOCAL_PROVIDER_NAME = "local";
     private static final Source SSO_INSTANCE = new Source(Method.SSO, Provider.SSO, "sso");
+    private static final Source JWT_INSTANCE = new Source(Method.JWT, Provider.JWT, "jwt");
+    private static final Source LOCAL_CSRF_INSTANCE = new Source(Method.CSRF, Provider.LOCAL, LOCAL_PROVIDER_NAME);
 
     private final Method method;
     private final Provider provider;
@@ -57,8 +63,14 @@ public interface AuthenticationEvent {
       return new Source(method, Provider.LOCAL, LOCAL_PROVIDER_NAME);
     }
 
-    public static Source oauth2(String providerName) {
-      return new Source(Method.OAUTH2, Provider.EXTERNAL, providerName);
+    public static Source oauth2(OAuth2IdentityProvider identityProvider) {
+      return new Source(
+        Method.OAUTH2, Provider.EXTERNAL,
+        requireNonNull(identityProvider, "identityProvider can't be null").getName());
+    }
+
+    public static Source oauth2Csrf(String providerName) {
+      return new Source(Method.CSRF, Provider.EXTERNAL, providerName);
     }
 
     public static Source realm(Method method, String providerName) {
@@ -69,15 +81,27 @@ public interface AuthenticationEvent {
       return SSO_INSTANCE;
     }
 
-    public Method getMethod() {
+    public static Source jwt() {
+      return JWT_INSTANCE;
+    }
+
+    public static Source localCsrf() {
+      return LOCAL_CSRF_INSTANCE;
+    }
+
+    public static Source external(BaseIdentityProvider identityProvider) {
+      return new Source(Method.EXTERNAL, Provider.EXTERNAL, identityProvider.getName());
+    }
+
+    Method getMethod() {
       return method;
     }
 
-    public Provider getProvider() {
+    Provider getProvider() {
       return provider;
     }
 
-    public String getProviderName() {
+    String getProviderName() {
       return providerName;
     }
 

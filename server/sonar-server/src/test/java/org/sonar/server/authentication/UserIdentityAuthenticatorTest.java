@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.config.MapSettings;
 import org.sonar.api.config.Settings;
-import org.sonar.api.server.authentication.UnauthorizedException;
 import org.sonar.api.server.authentication.UserIdentity;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.internal.AlwaysIncreasingSystem2;
@@ -36,6 +35,7 @@ import org.sonar.db.DbTester;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
+import org.sonar.server.authentication.event.AuthenticationException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
 import org.sonar.server.organization.TestDefaultOrganizationProvider;
 import org.sonar.server.user.NewUserNotifier;
@@ -47,6 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.sonar.db.organization.OrganizationTesting.newOrganizationDto;
 import static org.sonar.db.user.UserTesting.newUserDto;
+import static org.sonar.server.authentication.event.AuthenticationEvent.Method;
+import static org.sonar.server.authentication.event.AuthenticationEvent.Source;
 
 public class UserIdentityAuthenticatorTest {
 
@@ -62,6 +64,7 @@ public class UserIdentityAuthenticatorTest {
 
   private static TestIdentityProvider IDENTITY_PROVIDER = new TestIdentityProvider()
     .setKey("github")
+    .setName("name of github")
     .setEnabled(true)
     .setAllowsUsersToSignUp(true);
 
@@ -91,7 +94,7 @@ public class UserIdentityAuthenticatorTest {
 
   @Test
   public void authenticate_new_user() throws Exception {
-    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER);
+    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, Source.realm(Method.BASIC, IDENTITY_PROVIDER.getName()));
 
     UserDto user = db.users().selectUserByLogin(USER_LOGIN).get();
     assertThat(user).isNotNull();
@@ -127,7 +130,7 @@ public class UserIdentityAuthenticatorTest {
       .setExternalIdentity("old identity")
       .setExternalIdentityProvider("old provide"));
 
-    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER);
+    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, Source.local(Method.BASIC));
 
     UserDto userDto = db.users().selectUserByLogin(USER_LOGIN).get();
     assertThat(userDto.isActive()).isTrue();
@@ -147,7 +150,7 @@ public class UserIdentityAuthenticatorTest {
       .setExternalIdentity("old identity")
       .setExternalIdentityProvider("old provide"));
 
-    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER);
+    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, Source.local(Method.BASIC_TOKEN));
 
     UserDto userDto = db.users().selectUserByLogin(USER_LOGIN).get();
     assertThat(userDto.isActive()).isTrue();
@@ -344,7 +347,7 @@ public class UserIdentityAuthenticatorTest {
       .setLogin(user.getLogin())
       .setName(user.getName())
       .setGroups(newHashSet(groupName))
-      .build(), IDENTITY_PROVIDER);
+      .build(), IDENTITY_PROVIDER, Source.sso());
 
     assertThat(db.users().selectGroupIdsOfUser(user)).containsOnly(groupInDefaultOrg.getId());
   }
@@ -357,9 +360,9 @@ public class UserIdentityAuthenticatorTest {
       .setEnabled(true)
       .setAllowsUsersToSignUp(false);
 
-    thrown.expect(UnauthorizedException.class);
+    thrown.expect(AuthenticationException.class);
     thrown.expectMessage("'github' users are not allowed to sign up");
-    underTest.authenticate(USER_IDENTITY, identityProvider);
+    underTest.authenticate(USER_IDENTITY, identityProvider, Source.realm(Method.FORM, identityProvider.getName()));
   }
 
   @Test
@@ -369,10 +372,10 @@ public class UserIdentityAuthenticatorTest {
       .setActive(true)
       .setEmail("john@email.com"));
 
-    thrown.expect(UnauthorizedException.class);
+    thrown.expect(AuthenticationException.class);
     thrown.expectMessage("You can't sign up because email 'john@email.com' is already used by an existing user. " +
       "This means that you probably already registered with another account.");
-    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER);
+    underTest.authenticate(USER_IDENTITY, IDENTITY_PROVIDER, Source.realm(Method.FORM_TOKEN, IDENTITY_PROVIDER.getName()));
   }
 
   private void authenticate(String login, String... groups) {
@@ -382,7 +385,7 @@ public class UserIdentityAuthenticatorTest {
       .setName("John")
       // No group
       .setGroups(Arrays.stream(groups).collect(Collectors.toSet()))
-      .build(), IDENTITY_PROVIDER);
+      .build(), IDENTITY_PROVIDER, Source.sso());
   }
 
 }

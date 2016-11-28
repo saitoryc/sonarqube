@@ -28,7 +28,7 @@ import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.user.UserDto;
 import org.sonar.server.authentication.event.AuthenticationEvent;
-import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.authentication.event.AuthenticationException;
 import org.sonar.server.usertoken.UserTokenAuthenticator;
 
 import static java.util.Locale.ENGLISH;
@@ -75,7 +75,10 @@ public class BasicAuthenticator {
 
     int semiColonPos = basicAuthDecoded.indexOf(':');
     if (semiColonPos <= 0) {
-      throw new UnauthorizedException("Invalid credentials : " + basicAuthDecoded);
+      throw AuthenticationException.newBuilder()
+        .setSource(Source.local(Method.BASIC))
+        .setMessage("decoded basic auth does not contain ':'")
+        .build();
     }
     String login = basicAuthDecoded.substring(0, semiColonPos);
     String password = basicAuthDecoded.substring(semiColonPos + 1);
@@ -95,17 +98,20 @@ public class BasicAuthenticator {
   private UserDto authenticateFromUserToken(String token) {
     Optional<String> authenticatedLogin = userTokenAuthenticator.authenticate(token);
     if (!authenticatedLogin.isPresent()) {
-      throw new UnauthorizedException("Token doesn't exist");
+      throw AuthenticationException.newBuilder()
+        .setSource(Source.local(Method.BASIC_TOKEN))
+        .setMessage("Token doesn't exist")
+        .build();
     }
-    DbSession dbSession = dbClient.openSession(false);
-    try {
+    try (DbSession dbSession = dbClient.openSession(false)) {
       UserDto userDto = dbClient.userDao().selectActiveUserByLogin(dbSession, authenticatedLogin.get());
       if (userDto == null) {
-        throw new UnauthorizedException("User doesn't exist");
+        throw AuthenticationException.newBuilder()
+          .setSource(Source.local(Method.BASIC_TOKEN))
+          .setMessage("User doesn't exist")
+          .build();
       }
       return userDto;
-    } finally {
-      dbClient.closeSession(dbSession);
     }
   }
 
