@@ -45,6 +45,7 @@ public class WebServerProcessLogging extends ServerProcessLogging {
 
     helper.configureLoggerLogLevelFromDomain("sql", props, ProcessId.WEB_SERVER, LogDomain.SQL);
     helper.configureLoggerLogLevelFromDomain("es", props, ProcessId.WEB_SERVER, LogDomain.ES_CLIENT);
+    helper.configureLoggerLogLevelFromDomain("auth.event", props, ProcessId.WEB_SERVER, LogDomain.AUTH_EVENT);
     helper.configureLoggersLogLevelFromDomain(JMX_RMI_LOGGER_NAMES, props, ProcessId.WEB_SERVER, LogDomain.JMX);
   }
 }
