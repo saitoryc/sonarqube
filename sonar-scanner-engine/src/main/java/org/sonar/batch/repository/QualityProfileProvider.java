@@ -55,7 +55,8 @@ public class QualityProfileProvider extends ProviderAdapter {
   @CheckForNull
   private static String getSonarProfile(AnalysisProperties props, DefaultAnalysisMode mode) {
     String profile = null;
-    if (!mode.isIssues() && props.properties().containsKey(ModuleQProfiles.SONAR_PROFILE_PROP)) {
+    // Changed not to use '!mode.isIssues()' 2016/11/30 saito
+    if (props.properties().containsKey(ModuleQProfiles.SONAR_PROFILE_PROP)) {
       profile = props.property(ModuleQProfiles.SONAR_PROFILE_PROP);
       LOG.warn("Ability to set quality profile from command line using '" + ModuleQProfiles.SONAR_PROFILE_PROP
         + "' is deprecated and will be dropped in a future SonarQube version. Please configure quality profile used by your project on SonarQube server.");
